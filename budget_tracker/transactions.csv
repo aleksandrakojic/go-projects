@@ -1,0 +1,5 @@
+ID,Amount,Category,Date,Type
+0,100.00,income,2025-01-09,20
+1,10.00,expense,2025-01-09,expense
+2,5.00,gas,2025-01-09,expense
+3,4.00,gift,2025-01-09,income
