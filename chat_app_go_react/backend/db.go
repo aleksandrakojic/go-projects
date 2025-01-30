@@ -1,35 +1,47 @@
 package routes
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"time"
+    "context"
+    "fmt"
+    "log"
+    "time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+    "go.mongodb.org/mongo-driver/mongo"
+    "go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// DBinstance initializes a connection to the MongoDB database and returns a MongoDB client.
 func DBinstance() *mongo.Client {
-	MongoDb := "mongodb://localhost:27017/caloriesdb"
+    MongoDb := "mongodb://localhost:27017"
 
-	client, err := mongo.NewClient(options.Client().ApplyURI(mongoDB))
-	if err!= nil {
+    client, err := mongo.NewClient(options.Client().ApplyURI(MongoDb))
+    if err != nil {
         log.Fatal(err)
     }
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	err = client.Connect(ctx)
-	if err!= nil {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    err = client.Connect(ctx)
+    if err != nil {
         log.Fatal(err)
     }
-	fmt.Println("Connected to NongoDB")
-	return client
+
+    // Check the connection
+    err = client.Ping(ctx, nil)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println("Connected to MongoDB")
+    return client
 }
 
-var Client *mongo.Client =  DBinstance()
+// Client is a global MongoDB client instance
+var Client *mongo.Client = DBinstance()
 
-func OpenConnection(client *mongo.Client, collectionName string) *mongo.Collection {
-	var collection *mongo.Collection = client.Database("caloriesdb").Collection(collectionName)
-	return collection
+// OpenConnection creates and returns a collection from the database
+func OpenConnection(collectionName string) *mongo.Collection {
+    // Use the global Client variable
+    collection := Client.Database("caloriesdb").Collection(collectionName)
+    return collection
 }

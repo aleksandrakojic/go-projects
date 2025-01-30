@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/aleksandrakojic/go-projects/chat_app_go_react/backend/routes"
+	"backend/routes"
 )
 
 func main() {
