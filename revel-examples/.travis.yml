@@ -1,0 +1,88 @@
+language: go
+
+go:
+  - "1.13"
+  - "1.14"
+  - "1.15"
+  - "tip"
+
+os:
+  - linux
+  - osx
+  - windows
+
+sudo: false
+
+branches:
+  only:
+    - master
+    - develop
+
+services:
+  # github.com/revel/revel/cache
+  - memcache
+  - redis-server
+
+env:
+  # Setting environments variables
+  - GO111MODULEsss=auto
+
+before_install:
+  # TRAVIS_OS_NAME - linux and osx
+  - echo $TRAVIS_OS_NAME
+  #- |
+  #  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+  #    brew update && brew install memcached redis && brew services start redis && brew services start memcached
+  #  fi
+  #- redis-server --daemonize yes
+  #- redis-cli info
+
+install:
+  # Setting environments variables
+  - export PATH=$PATH:$HOME/gopath/bin
+  - export REVEL_BRANCH="develop"
+  - 'if [[ "$TRAVIS_BRANCH" == "master" ]]; then export REVEL_BRANCH="master"; fi'
+  - 'echo "Travis branch: $TRAVIS_BRANCH, Revel dependency branch: $REVEL_BRANCH"'
+  # - go mod edit -replace "github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" examples/booking/go.mod
+  # Build the revel CLI based on branch
+  - export GO111MODULE=on
+  - git clone -b $REVEL_BRANCH git://github.com/revel/cmd
+  - cd cmd; go build -o $GOPATH/bin/revel github.com/revel/cmd/revel; ls -lah $GOPATH/bin; cd ..; rm -rf cmd
+  # Update the go.mod files in the example folder with the correct branch
+  - |
+    for file in booking ; do echo "$file is a directory";
+      cat $file/go.mod
+      echo "replace github.com/revel/modules => github.com/revel/modules $REVEL_BRANCH" >> $file/go.mod
+      echo "replace github.com/revel/revel => github.com/revel/revel $REVEL_BRANCH" >> $file/go.mod
+    done
+
+  # Checkout the other projects to test backwards compatibility
+  - export GO111MODULE=auto
+  - git clone -b $REVEL_BRANCH git://github.com/revel/revel ../revel/
+  - git clone -b $REVEL_BRANCH git://github.com/revel/modules ../modules/
+  - git clone -b $REVEL_BRANCH git://github.com/revel/config ../config/
+  - git clone -b $REVEL_BRANCH git://github.com/revel/cron ../cron/
+  - go get -t -v github.com/revel/revel/...
+
+
+script:
+  - revel test -v -a github.com/revel/examples/booking2
+  - revel test -v -a github.com/revel/examples/chat
+  - revel test -v -a github.com/revel/examples/facebook-oauth2
+  - revel test -v -a github.com/revel/examples/twitter-oauth
+  - revel test -v -a github.com/revel/examples/validation
+  - revel test -v -a github.com/revel/examples/upload
+
+  # Should not need gopath to run
+  - mkdir GOPATHBACKUP
+  - export GOPATH=$PWD/GOPATHBACKUP
+  # Build & run the sample apps
+  - revel test -v -a booking
+  # fast http not supported on windows
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then  revel test -v -a booking -m dev-fast; fi
+  # This test cannot be done at this time on go.mod projects
+  #- cd booking; go test -v github.com/revel/examples/booking/app/...  -args -revel.importPath=github.com/revel/examples/booking; cd ..
+
+matrix:
+  allow_failures:
+    - go: tip
