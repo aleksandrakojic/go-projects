@@ -1,4 +1,3 @@
-version: "3"
 services:
   opentelemetry-collector-contrib:
     image: otel/opentelemetry-collector-contrib-dev:latest
